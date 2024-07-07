@@ -1,25 +1,24 @@
 #pragma once
 
-#include <stddef.h>
-#include <stdint.h>
-#include "Broker.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include <stddef.h>
+#include <stdint.h>
+#include "Broker.h"
 	typedef struct Publisher_t {
 		Broker_t broker;
 	} Publisher_t;
 
-	void Publisher_Init(Publisher_t *object, uint8_t maxSubscribers);
+	void Publisher_Init(Publisher_t *self, uint8_t maxSubscribers);
 
-	SubscriptionAccountId Publisher_Subscribe(Publisher_t *object, Subscriber_t *subscriber, PublishMessageAttribute interestedPublish);
+	SubscriptionAccountId Publisher_Subscribe(Publisher_t *self, Subscriber_t *subscriber, PublishMessageAttribute interestedPublish);
 
-	void Publisher_Unsubscribe(Publisher_t *object, SubscriptionAccountId id);
+	void Publisher_Unsubscribe(Publisher_t *self, SubscriptionAccountId id);
 
-	void Publisher_Publish(Publisher_t *object, PublishContent_t *topic);
+	void Publisher_Publish(Publisher_t *self, PublishContent_t *publish);
 
-	void Publisher_Destroy(Publisher_t *object);
+	void Publisher_Destroy(Publisher_t *self);
 #ifdef __cplusplus
 }
 #endif

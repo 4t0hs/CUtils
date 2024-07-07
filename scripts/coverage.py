@@ -71,7 +71,7 @@ def CollectCoverage(
         "--remove",
         tmp.as_posix(),
         "*googletest/*",
-        "/usr/include/c++/*",
+        "/usr/include/*",
         "-o",
         coverage.as_posix(),
     ]

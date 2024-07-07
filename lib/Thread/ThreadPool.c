@@ -32,12 +32,12 @@ static const ThreadPoolTask_t exitTask = {
 	.function = _ExitWorker, .arg = NULL
 };
 
-static ThreadPoolTask_t *WaitForNewTask(ThreadPool_t *this) {
+static ThreadPoolTask_t *WaitForNewTask(ThreadPool_t *self) {
 	ThreadPoolTask_t *task;
 	while (1) {
-		MUTEX_LOCK(&this->mutex);
-		task = QUEUE_POP(this->tasks);
-		MUTEX_UNLOCK(&this->mutex);
+		MUTEX_LOCK(&self->mutex);
+		task = QUEUE_POP(self->tasks);
+		MUTEX_UNLOCK(&self->mutex);
 		if (task) {
 			break;
 		}
@@ -51,18 +51,18 @@ static void _ExitWorker(void *arg) {
 	g_thread_exit(NULL);
 }
 
-static inline void StopWorkers(ThreadPool_t *this) {
-	for (uint16_t i = 0; i < this->maxNumThreads; i++) {
-		MUTEX_LOCK(&this->mutex);
-		QUEUE_PUSH(this->tasks, (void *)&exitTask);
-		MUTEX_UNLOCK(&this->mutex);
+static inline void StopWorkers(ThreadPool_t *self) {
+	for (uint16_t i = 0; i < self->maxNumThreads; i++) {
+		MUTEX_LOCK(&self->mutex);
+		QUEUE_PUSH(self->tasks, (void *)&exitTask);
+		MUTEX_UNLOCK(&self->mutex);
 	}
 }
 
 static gpointer WorkerThread(gpointer arg) {
-	ThreadPool_t *this = arg;
+	ThreadPool_t *self = arg;
 	while (1) {
-		ThreadPoolTask_t *task = WaitForNewTask(this);
+		ThreadPoolTask_t *task = WaitForNewTask(self);
 		if (task) {
 			task->function(task->arg);
 			free(task);
@@ -71,17 +71,17 @@ static gpointer WorkerThread(gpointer arg) {
 	return (gpointer)0;
 }
 
-static void WaitForWorkersExited(ThreadPool_t *this) {
-	for (uint16_t i = 0; i < this->maxNumThreads; i++) {
-		GThread *thread = this->workers[i];
+static void WaitForWorkersExited(ThreadPool_t *self) {
+	for (uint16_t i = 0; i < self->maxNumThreads; i++) {
+		GThread *thread = self->workers[i];
 		if (thread) {
 			(void)g_thread_join(thread);
 		}
 	}
 }
 
-static void AbortWorkers(ThreadPool_t *this) {
-	StopWorkers(this);
+static void AbortWorkers(ThreadPool_t *self) {
+	StopWorkers(self);
 }
 
 static uint GetHardwareConcurrency(void) {
@@ -90,70 +90,70 @@ static uint GetHardwareConcurrency(void) {
 	return CPU_COUNT(&cpu_set);
 }
 
-void ThreadPool_Init(ThreadPool_t *this, uint16_t numThreads) {
-	g_return_if_fail(this);
+void ThreadPool_Init(ThreadPool_t *self, uint16_t numThreads) {
+	g_return_if_fail(self);
 
-	CLEAR(this);
+	CLEAR(self);
 	if (numThreads > 0) {
-		this->maxNumThreads = numThreads;
+		self->maxNumThreads = numThreads;
 	} else {
-		this->maxNumThreads = GetHardwareConcurrency();
+		self->maxNumThreads = GetHardwareConcurrency();
 	}
 
-	this->tasks = g_queue_new();
-	MUTEX_INIT(&this->mutex);
+	self->tasks = g_queue_new();
+	MUTEX_INIT(&self->mutex);
 
-	this->workers = (GThread **)g_malloc0_n(this->maxNumThreads, sizeof(GThread *));
-	for (uint16_t i = 0; i < this->maxNumThreads; i++) {
+	self->workers = (GThread **)g_malloc0_n(self->maxNumThreads, sizeof(GThread *));
+	for (uint16_t i = 0; i < self->maxNumThreads; i++) {
 		char name[16];
 		sprintf(name, "ThreadPool_%d", i);
-		this->workers[i] = g_thread_new(name, WorkerThread, this);
+		self->workers[i] = g_thread_new(name, WorkerThread, self);
 	}
 }
 
-int ThreadPool_Push(ThreadPool_t *this, const ThreadPoolTask_t *task) {
-	g_return_val_if_fail(this, -1);
+int ThreadPool_Push(ThreadPool_t *self, const ThreadPoolTask_t *task) {
+	g_return_val_if_fail(self, -1);
 	g_return_val_if_fail(task, -1);
 	ThreadPoolTask_t *_task = g_malloc(sizeof(ThreadPoolTask_t));
 	*_task = *task;
-	MUTEX_LOCK(&this->mutex);
-	QUEUE_PUSH(this->tasks, _task);
-	MUTEX_UNLOCK(&this->mutex);
+	MUTEX_LOCK(&self->mutex);
+	QUEUE_PUSH(self->tasks, _task);
+	MUTEX_UNLOCK(&self->mutex);
 	return 0;
 }
 
-int ThreadPool_PushTasks(ThreadPool_t *this, const ThreadPoolTask_t *tasks[], uint64_t numTasks) {
-	g_return_val_if_fail(this, -1);
+int ThreadPool_PushTasks(ThreadPool_t *self, const ThreadPoolTask_t *tasks[], uint64_t numTasks) {
+	g_return_val_if_fail(self, -1);
 	g_return_val_if_fail(tasks, -1);
 	g_return_val_if_fail(numTasks, -1);
 
 	for (uint64_t i = 0; i < numTasks; i++) {
-		if (ThreadPool_Push(this, tasks[i]) != 0) {
+		if (ThreadPool_Push(self, tasks[i]) != 0) {
 			return -1;
 		}
 	}
 	return 0;
 }
 
-void ThreadPool_Destroy(ThreadPool_t *this, bool isWait) {
-	g_return_if_fail(this);
+void ThreadPool_Destroy(ThreadPool_t *self, bool isWait) {
+	g_return_if_fail(self);
 	if (isWait) {
-		StopWorkers(this);
+		StopWorkers(self);
 	} else {
-		AbortWorkers(this);
+		AbortWorkers(self);
 	}
-	WaitForWorkersExited(this);
-	g_queue_free(this->tasks);
-	if (this->workers) g_free((gpointer)this->workers);
-	MUTEX_DESTROY(&this->mutex);
-	CLEAR(this);
+	WaitForWorkersExited(self);
+	g_queue_free(self->tasks);
+	if (self->workers) g_free((gpointer)self->workers);
+	MUTEX_DESTROY(&self->mutex);
+	CLEAR(self);
 }
 
-uint64_t ThreadPool_GetNumTasks(ThreadPool_t *this) {
-	g_return_val_if_fail(this, 0);
-	MUTEX_LOCK(&this->mutex);
-	uint64_t numTasks = g_queue_get_length(this->tasks);
-	MUTEX_UNLOCK(&this->mutex);
+uint64_t ThreadPool_GetNumTasks(ThreadPool_t *self) {
+	g_return_val_if_fail(self, 0);
+	MUTEX_LOCK(&self->mutex);
+	uint64_t numTasks = g_queue_get_length(self->tasks);
+	MUTEX_UNLOCK(&self->mutex);
 	return numTasks;
 }
 

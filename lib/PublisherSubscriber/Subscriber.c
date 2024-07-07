@@ -2,21 +2,30 @@
 #include "PublisherSubscriber/Broker.h"
 #include "utilities.h"
 
-void Subscriber_Init(Subscriber_t *this, SubscriberUpdate update, void *userData) {
-	CLEAR(this);
-	this->update = update;
-	this->userData = userData;
+void Subscriber_Init(Subscriber_t *self, SubscriberUpdate update, void *userData) {
+	if (UNLIKELY(!self)) {
+		return;
+	}
+	CLEAR(self);
+	self->update = update;
+	self->userData = userData;
 }
 
-SubscriberReply Subscriber_Update(Subscriber_t *this, const PublishContent_t *publish) {
-	if (this->update) {
-		return this->update(publish, this->userData);
+SubscriberReply Subscriber_Update(Subscriber_t *self, const PublishContent_t *publish) {
+	if (UNLIKELY(!self)) {
+		return SUBSCRIBER_NACK;
+	}
+	if (self->update) {
+		return self->update(publish, self->userData);
 	}
 	return SUBSCRIBER_ACK;
 }
 
-void Subscriber_Destroy(Subscriber_t *this) {
-	CLEAR(this);
+void Subscriber_Destroy(Subscriber_t *self) {
+	if (UNLIKELY(!self)) {
+		return;
+	}
+	CLEAR(self);
 }
 
 

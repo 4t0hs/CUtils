@@ -1,27 +1,32 @@
 #include <stdlib.h>
-#include <errno.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include "utilities.h"
 #include "PublisherSubscriber/Subscription.h"
 
-static inline SubscriptionAccount_t *GetAccount(Subscription_t *this, SubscriptionAccountId id) {
-	return &this->accounts[id];
+static inline SubscriptionAccount_t *GetAccount(Subscription_t *self, SubscriptionAccountId id) {
+	return &self->accounts[id];
 }
 
-static inline bool IsMatch(SubscriptionAccount_t *this, PublishMessageAttribute attribute) {
-	return this->interestedPublish == attribute;
+static inline bool IsMatch(SubscriptionAccount_t *self, PublishMessageAttribute attribute) {
+	return self->interestedPublish == attribute;
 }
 
-void Subscription_Init(Subscription_t *this, int numAccounts) {
-	CLEAR(this);
-	this->accounts = calloc(numAccounts, sizeof(SubscriptionAccount_t));
-	this->numAccounts = numAccounts;
+void Subscription_Init(Subscription_t *self, int numAccounts) {
+	if (UNLIKELY(!self)) {
+		return;
+	}
+	CLEAR(self);
+	self->accounts = calloc(numAccounts, sizeof(SubscriptionAccount_t));
+	self->numAccounts = numAccounts;
 }
 
-SubscriptionAccountId Subscription_Contract(Subscription_t *this, Subscriber_t *subscriber, PublishMessageAttribute interestedTopic) {
-	for (int i = 0; i < this->numAccounts; i++) {
-		SubscriptionAccount_t *account = &this->accounts[i];
+SubscriptionAccountId Subscription_Contract(Subscription_t *self, Subscriber_t *subscriber, PublishMessageAttribute interestedTopic) {
+	if (UNLIKELY(!self || !subscriber)) {
+		return -1;
+	}
+	for (int i = 0; i < self->numAccounts; i++) {
+		SubscriptionAccount_t *account = &self->accounts[i];
 		if (!account->contracted) {
 			account->id = i;
 			account->subscriber = *subscriber;
@@ -30,59 +35,63 @@ SubscriptionAccountId Subscription_Contract(Subscription_t *this, Subscriber_t *
 			return i;
 		}
 	}
-	errno = ENOBUFS;
 	return -1;
 }
 
-void Subscription_Cancellation(Subscription_t *this, SubscriptionAccountId id) {
-	if (id >= this->numAccounts) {
-		errno = EINVAL;
+void Subscription_Cancellation(Subscription_t *self, SubscriptionAccountId id) {
+	if (UNLIKELY(!self || id >= self->numAccounts)) {
 		return;
 	}
-	SubscriptionAccount_t *account = GetAccount(this, id);
+	SubscriptionAccount_t *account = GetAccount(self, id);
 	if (account->contracted) {
 		CLEAR(account);
 	}
 }
 
-SubscriptionAccount_t *Subscription_GetAccount(Subscription_t *this, SubscriptionAccountId id) {
-	if (id >= this->numAccounts) {
-		errno = EINVAL;
+SubscriptionAccount_t *Subscription_GetAccount(Subscription_t *self, SubscriptionAccountId id) {
+	if (UNLIKELY(!self || id >= self->numAccounts)) {
 		return NULL;
 	}
-	SubscriptionAccount_t *account = &this->accounts[id];
+	SubscriptionAccount_t *account = &self->accounts[id];
 	if (account->contracted) {
 		return account;
 	}
-	errno = EBADR;
 	return NULL;
 }
 
-ssize_t Subscription_Match(Subscription_t *this, PublishMessageAttribute topicAttribute, SubscriptionAccountId matchedIds[], size_t size) {
+ssize_t Subscription_Match(Subscription_t *self, PublishMessageAttribute messageAttribute, SubscriptionAccountId matchedIds[], size_t size) {
+	if (UNLIKELY(!self || !matchedIds)) {
+		return -1;
+	}
 	size_t bufferIndex = 0;
-	for (SubscriptionAccountId i = 0; i < this->numAccounts; i++) {
-		SubscriptionAccount_t *account = GetAccount(this, i);
-		if ((!account->contracted)
-			|| (!IsMatch(account, topicAttribute)))
-			continue;
+	for (SubscriptionAccountId i = 0; i < self->numAccounts; i++) {
 		if (size <= bufferIndex) {
-			errno = ENOBUFS;
 			return -1;
+		}
+		SubscriptionAccount_t *account = GetAccount(self, i);
+		if ((!account->contracted) || (!IsMatch(account, messageAttribute))) {
+			continue;
 		}
 		matchedIds[bufferIndex++] = i;
 	}
 	return (ssize_t)bufferIndex;
 }
 
-void Subscription_Destroy(Subscription_t *this) {
-	if (this->accounts) free(this->accounts);
-	CLEAR(this);
+void Subscription_Destroy(Subscription_t *self) {
+	if (UNLIKELY(!self)) {
+		return;
+	}
+	if (self->accounts) free(self->accounts);
+	CLEAR(self);
 }
 
-size_t Subscription_Count(Subscription_t *this) {
+size_t Subscription_Count(Subscription_t *self) {
+	if (UNLIKELY(!self)) {
+		return 0;
+	}
 	size_t counter = 0;
-	for (SubscriptionAccountId i = 0; i < this->numAccounts; i++) {
-		SubscriptionAccount_t *account = GetAccount(this, i);
+	for (SubscriptionAccountId i = 0; i < self->numAccounts; i++) {
+		SubscriptionAccount_t *account = GetAccount(self, i);
 		if (account->contracted) {
 			counter++;
 		}

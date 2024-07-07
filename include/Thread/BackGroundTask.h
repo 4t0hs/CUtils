@@ -11,8 +11,8 @@ extern "C" {
 #include <pthread.h>
 #include <stdbool.h>
 
-struct BackGroundTask;
-typedef struct BackGroundTask BackGroundTask_t;
+struct BackGroundTask_t;
+typedef struct BackGroundTask_t BackGroundTask_t;
 
 typedef int BackGroundTaskProgress;
 
@@ -24,28 +24,27 @@ typedef enum BackGroundTaskStatus {
 	BACK_GROUND_TASK_ABORTED,
 } BackGroundTaskStatus;
 
-typedef struct BackGroundTaskEventHandlers {
-	void (*setup)(BackGroundTask_t *object);
-	void (*progressChanged)(BackGroundTask_t *object, BackGroundTaskProgress newProgress);
-	void (*finished)(BackGroundTask_t *object, BackGroundTaskStatus exitStatus);
+typedef struct BackGroundTaskEventHandlers_t {
+	void (*setup)(BackGroundTask_t *self);
+	void (*progressChanged)(BackGroundTask_t *self, BackGroundTaskProgress newProgress);
+	void (*finished)(BackGroundTask_t *self, BackGroundTaskStatus exitStatus);
 } BackGroundTaskEventHandlers_t;
 
-typedef struct BackGroundTaskWork {
-	BackGroundTaskStatus(*func)(BackGroundTask_t *object, void *sender);
+typedef struct BackGroundTaskWork_t {
+	BackGroundTaskStatus(*func)(BackGroundTask_t *self, void *sender);
 	void *sender;
 } BackGroundTaskWork_t;
 
-typedef struct BackGroundTaskImpl {
+typedef struct BackGroundTaskImpl_t {
 	pthread_t id;
 	bool isBusy;
-	bool exited;
+	ATOMIC(bool) exited;
 	BackGroundTaskWork_t work;
 } BackGroundTaskImpl_t;
 
-struct BackGroundTask {
+struct BackGroundTask_t {
 	// private
 	BackGroundTaskImpl_t impl;
-
 	// public
 	char name[16];
 	BackGroundTaskEventHandlers_t eventHandlers;
@@ -54,18 +53,18 @@ struct BackGroundTask {
 	bool cancellationPending;
 };
 
-void BackGroundTask_Init(BackGroundTask_t *object, BackGroundTaskWork_t *work);
+void BackGroundTask_Init(BackGroundTask_t *self, BackGroundTaskWork_t *work);
 
-int BackGroundTask_Run(BackGroundTask_t *object);
+int BackGroundTask_Run(BackGroundTask_t *self);
 
-void BackGroundTask_ReportsProgress(BackGroundTask_t *object, BackGroundTaskProgress newProgress);
+void BackGroundTask_ReportsProgress(BackGroundTask_t *self, BackGroundTaskProgress newProgress);
 
-bool BackGroundTask_IsRunning(BackGroundTask_t *object);
+bool BackGroundTask_IsRunning(BackGroundTask_t *self);
 
-void BackGroundTask_Abort(BackGroundTask_t *object);
+void BackGroundTask_Abort(BackGroundTask_t *self);
 
-void BackGroundTask_Cancel(BackGroundTask_t *object);
-void BackGroundTask_Dispose(BackGroundTask_t *object);
+void BackGroundTask_Cancel(BackGroundTask_t *self);
+void BackGroundTask_Destroy(BackGroundTask_t *self);
 
 #ifdef __cplusplus
 }

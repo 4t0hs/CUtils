@@ -1,11 +1,9 @@
 #pragma once
 
-#include "PublishContent.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+#include "PublishContent.h"
 	typedef enum SubscriberReply {
 		SUBSCRIBER_ACK = 0,
 		SUBSCRIBER_NACK,
@@ -18,11 +16,11 @@ extern "C" {
 		void *userData;
 	} Subscriber_t;
 
-	void Subscriber_Init(Subscriber_t *object, SubscriberUpdate Update, void *userData);
+	void Subscriber_Init(Subscriber_t *self, SubscriberUpdate update, void *userData);
 
-	SubscriberReply Subscriber_Update(Subscriber_t *object, const PublishContent_t *publish);
+	SubscriberReply Subscriber_Update(Subscriber_t *self, const PublishContent_t *publish);
 
-	void Subscriber_Destroy(Subscriber_t *object);
+	void Subscriber_Destroy(Subscriber_t *self);
 #ifdef __cplusplus
 }
 #endif

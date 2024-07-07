@@ -5,82 +5,82 @@
 
 #define fill(p, v, s)	(memset((p), (v), (s) * __BS_WORD_BYTE))
 
-void Bitset_Init(Bitset_t *object, uint64_t numBits) {
-	if (__BS_UNLIKELY(!object)) {
+void Bitset_Init(Bitset_t *self, uint64_t numBits) {
+	if (__BS_UNLIKELY(!self)) {
 		return;
 	}
-	CLEAR(object);
-	object->numBits = numBits;
-	object->capacity = __BS_TO_BIT(numBits) ? __BS_TO_WORD(numBits) + 1 : __BS_TO_WORD(numBits);
-	object->words = calloc(object->capacity, sizeof(uint64_t));
+	CLEAR(self);
+	self->numBits = numBits;
+	self->capacity = __BS_TO_BIT(numBits) ? __BS_TO_WORD(numBits) + 1 : __BS_TO_WORD(numBits);
+	self->words = calloc(self->capacity, sizeof(uint64_t));
 }
 
-void Bitset_Destroy(Bitset_t *object) {
-	if (__BS_UNLIKELY(!object)) {
+void Bitset_Destroy(Bitset_t *self) {
+	if (__BS_UNLIKELY(!self)) {
 		return;
 	}
-	free(object->words);
-	if (object->string)free(object->string);
-	CLEAR(object);
+	free(self->words);
+	if (self->string)free(self->string);
+	CLEAR(self);
 }
 
-void Bitset_RightShift(Bitset_t *object, uint64_t shift) {
-	if (__BS_UNLIKELY(!object)) {
+void Bitset_RightShift(Bitset_t *self, uint64_t shift) {
+	if (__BS_UNLIKELY(!self)) {
 		return;
 	}
 	if (shift == 0) {
 		return;
 	}
 	const uint64_t shiftWords = __BS_TO_WORD(shift);
-	if (shiftWords >= object->capacity) {
-		fill(object->words, 0, object->capacity);
+	if (shiftWords >= self->capacity) {
+		fill(self->words, 0, self->capacity);
 		return;
 	}
 	const uint64_t offset = __BS_TO_BIT(shift);
-	const uint64_t limit = object->capacity - shiftWords - 1;
+	const uint64_t limit = self->capacity - shiftWords - 1;
 
 	if (offset == 0) {
 		for (uint64_t i = 0; i <= limit; i++) {
-			object->words[i] = object->words[i + shiftWords];
+			self->words[i] = self->words[i + shiftWords];
 		}
 	} else {
 		const uint64_t subOffset = __BS_WORD_BIT - offset;
 		for (uint64_t i = 0; i < limit; i++) {
-			object->words[i] = (
-				(object->words[i + shiftWords] >> offset) | (object->words[i + shiftWords + 1] << subOffset)
+			self->words[i] = (
+				(self->words[i + shiftWords] >> offset) | (self->words[i + shiftWords + 1] << subOffset)
 				);
 		}
-		object->words[limit] = object->words[limit] >> offset;
+		self->words[limit] = self->words[limit] >> offset;
 	}
-	fill(&object->words[limit + 1], 0, object->capacity - limit -1);
+	fill(&self->words[limit + 1], 0, self->capacity - limit -1);
 }
 
-void Bitset_LeftShift(Bitset_t *object, uint64_t shift) {
-	if (__BS_UNLIKELY(!object)) {
+void Bitset_LeftShift(Bitset_t *self, uint64_t shift) {
+	if (__BS_UNLIKELY(!self)) {
 		return;
 	}
 	if (shift == 0) {
 		return;
 	}
 	const uint64_t shiftWords = __BS_TO_WORD(shift);
-	if (shiftWords >= object->capacity) {
-		fill(object->words, 0, object->capacity);
+	if (shiftWords >= self->capacity) {
+		fill(self->words, 0, self->capacity);
 		return;
 	}
 	const uint64_t offset = __BS_TO_BIT(shift);
 
 	if (offset == 0) {
-		for (uint64_t i = object->capacity - 1; i >= shiftWords; i--) {
-			object->words[i] = object->words[i - shiftWords];
+		for (uint64_t i = self->capacity - 1; i >= shiftWords; i--) {
+			self->words[i] = self->words[i - shiftWords];
 		}
 	} else {
 		const uint64_t subOffset = __BS_WORD_BIT - offset;
-		for (uint64_t i = object->capacity - 1; i > shiftWords; i--) {
-			object->words[i] = ((object->words[i - shiftWords] << offset) | (object->words[i - shiftWords - 1] >> subOffset));
+		for (uint64_t i = self->capacity - 1; i > shiftWords; i--) {
+			self->words[i] = ((self->words[i - shiftWords] << offset) | (self->words[i - shiftWords - 1] >> subOffset));
 		}
-		object->words[shiftWords] = object->words[0] << offset;
+		self->words[shiftWords] = self->words[0] << offset;
 	}
-	fill(object->words, 0, shiftWords);
+	fill(self->words, 0, shiftWords);
 }
 
 static inline void BinaryToString(uint64_t v, char *buffer, uint8_t length) {
@@ -92,24 +92,24 @@ static inline void BinaryToString(uint64_t v, char *buffer, uint8_t length) {
 		*buffer++ = (v & mask) ? '1' : '0';
 	}
 }
-char *Bitset_ToString(Bitset_t *object) {
-	if (__BS_UNLIKELY(!object)) {
+char *Bitset_ToString(Bitset_t *self) {
+	if (__BS_UNLIKELY(!self)) {
 		return NULL;
 	}
-	if (!object->string) {
-		object->string = calloc(object->numBits + 1, 1);
+	if (!self->string) {
+		self->string = calloc(self->numBits + 1, 1);
 	}
-	int64_t numWords = __BS_TO_WORD(object->numBits);
-	uint8_t remainBits = __BS_TO_BIT(object->numBits);
-	char *str = object->string;
+	int64_t numWords = __BS_TO_WORD(self->numBits);
+	uint8_t remainBits = __BS_TO_BIT(self->numBits);
+	char *str = self->string;
 	if (remainBits != 0) {
-		BinaryToString(object->words[numWords], str, remainBits);
+		BinaryToString(self->words[numWords], str, remainBits);
 		str += remainBits;
 	}
 	for (int64_t i = numWords - 1; i >= 0; i--) {
-		BinaryToString(object->words[i], str, __BS_WORD_BIT);
+		BinaryToString(self->words[i], str, __BS_WORD_BIT);
 		str += __BS_WORD_BIT;
 	}
 	*str = '\0';
-	return object->string;
+	return self->string;
 }

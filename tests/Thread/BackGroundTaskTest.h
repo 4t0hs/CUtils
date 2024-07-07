@@ -30,13 +30,13 @@ protected:
 		}
 		cond.notify_one();
 	}
-	BackGroundTask task;
+	BackGroundTask_t task;
 	virtual void SetUp() {
-		BackGroundTaskWork w = { .func = worker, .sender = nullptr };
+		BackGroundTaskWork_t w = { .func = worker, .sender = nullptr };
 		BackGroundTask_Init(&task, &w);
 	}
 	virtual void TearDown() {
-		BackGroundTask_Dispose(&task);
+		BackGroundTask_Destroy(&task);
 	}
 
 	bool TimedWait(int sec) {
@@ -59,7 +59,7 @@ TEST_F(BackGroundTaskTest, NormalFinish) {
 	task.impl.work.func = [](BackGroundTask_t *o, void *s) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		return BACK_GROUND_TASK_EXITED;
-		};
+	};
 	task.eventHandlers.finished = completed;
 	BackGroundTask_Run(&task);
 	// ASSERT_EQ(true, TimedWait(2));
@@ -76,7 +76,7 @@ TEST_F(BackGroundTaskTest, ProgressReport) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(300));
 		}
 		return BACK_GROUND_TASK_EXITED;
-		};
+	};
 	task.eventHandlers.finished = completed;
 	task.eventHandlers.progressChanged = progressChanged;
 	BackGroundTask_Run(&task);
@@ -93,7 +93,7 @@ TEST_F(BackGroundTaskTest, setup) {
 	task.impl.work.func = [](BackGroundTask_t *o, void *s) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		return BACK_GROUND_TASK_EXITED;
-		};
+	};
 	// bool isReady = false;
 	task.eventHandlers.finished = completed;
 	task.eventHandlers.setup = [](BackGroundTask_t *o) {
@@ -102,7 +102,7 @@ TEST_F(BackGroundTaskTest, setup) {
 			isReady = true;
 		}
 		cond.notify_one();
-		};
+	};
 	BackGroundTask_Run(&task);
 	Wait();
 	ASSERT_EQ(true, isReady);
@@ -117,7 +117,7 @@ TEST_F(BackGroundTaskTest, WorkCancellation) {
 		}
 		// printf("Canceled!!\n");
 		return BACK_GROUND_TASK_CANCELED;
-		};
+	};
 	task.eventHandlers.finished = completed;
 	BackGroundTask_Run(&task);
 	BackGroundTask_Cancel(&task);
@@ -131,7 +131,7 @@ TEST_F(BackGroundTaskTest, AbortTask) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}
 		return BACK_GROUND_TASK_EXITED;
-		};
+	};
 	task.eventHandlers.finished = completed;
 	BackGroundTask_Run(&task);
 	usleep(1000 * 200);

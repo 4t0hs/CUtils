@@ -14,14 +14,17 @@ typedef struct Delivery_t {
 	PublishContent_t topic;
 } Delivery_t;
 
-static void Republish(Broker_t *this) {
-	MessageStorage_t *pending = &this->pendingMessages;
-	Subscription_t *subscription = &this->subscription;
+static void Republish(Broker_t *self) {
+	MessageStorage_t *pending = &self->pendingMessages;
+	Subscription_t *subscription = &self->subscription;
 	size_t count = pending->count; // 保留中のメッセージを一回だけ送りたいので、最初のたまっている数を覚えておく
 	for (size_t i = 0; i < count; i++) {
 		const Delivery_t *delivery = MessageStorage_Peek(pending);
 		SubscriptionAccount_t *account = Subscription_GetAccount(subscription, delivery->id);
-		if ((account) && (Subscriber_Update(&account->subscriber, &delivery->topic) == SUBSCRIBER_NACK)) {
+		if (UNLIKELY(!account)) {
+			continue;
+		}
+		if (Subscriber_Update(&account->subscriber, &delivery->topic) == SUBSCRIBER_NACK) {
 			MessageStorage_MoveLast(pending);	// peekしたものを最後尾に持っていく
 		}
 		MessageStorage_RemoveTop(pending);
@@ -29,48 +32,54 @@ static void Republish(Broker_t *this) {
 }
 
 
-void Broker_Init(Broker_t *this, uint8_t maxSubscribers) {
-	if (UNLIKELY(!this)) return;
-	CLEAR(this);
-	this->maxSubscribers = maxSubscribers;
-	Subscription_Init(&this->subscription, maxSubscribers);
-	MessageStorage_Init(&this->pendingMessages, sizeof(Delivery_t), maxSubscribers * 16UL);
+void Broker_Init(Broker_t *self, uint8_t maxSubscribers) {
+	if (UNLIKELY(!self)) {
+		return;
+	}
+	CLEAR(self);
+	self->maxSubscribers = maxSubscribers;
+	Subscription_Init(&self->subscription, maxSubscribers);
+	MessageStorage_Init(&self->pendingMessages, sizeof(Delivery_t), maxSubscribers * 16UL);
 }
 
-void Broker_Publish(Broker_t *this, PublishContent_t *topic) {
-	if (UNLIKELY(!this)) return;
-
-	Republish(this);
-	SubscriptionAccountId ids[this->maxSubscribers];
-	ssize_t numIds = Subscription_Match(&this->subscription, topic->attribute, ids, this->maxSubscribers);
+void Broker_Publish(Broker_t *self, PublishContent_t *content) {
+	if (UNLIKELY(!self || !content)) {
+		return;
+	}
+	Republish(self);
+	SubscriptionAccountId ids[self->maxSubscribers];
+	ssize_t numIds = Subscription_Match(&self->subscription, content->attribute, ids, self->maxSubscribers);
 	if (numIds <= 0) {
 		return;
 	}
 	for (SubscriptionAccountId i = 0; i < numIds; i++) {
-		SubscriptionAccount_t *account = Subscription_GetAccount(&this->subscription, i);
-		if (Subscriber_Update(&account->subscriber, topic) == SUBSCRIBER_NACK) {
-			MessageStorage_Push(&this->pendingMessages, &(Delivery_t){
-				.id = account->id, .topic = *topic
+		SubscriptionAccount_t *account = Subscription_GetAccount(&self->subscription, i);
+		if (UNLIKELY(!account)) {
+			continue;
+		}
+		if (Subscriber_Update(&account->subscriber, content) == SUBSCRIBER_NACK) {
+			MessageStorage_Push(&self->pendingMessages, &(Delivery_t){
+				.id = account->id, .topic = *content
 			});
 		}
 	}
 }
 
-SubscriptionAccountId Broker_Subscribe(Broker_t *this, Subscriber_t *subscriber, PublishMessageAttribute interestedTopic) {
-	return Subscription_Contract(&this->subscription, subscriber, interestedTopic);
+SubscriptionAccountId Broker_Subscribe(Broker_t *self, Subscriber_t *subscriber, PublishMessageAttribute interestedTopic) {
+	return Subscription_Contract(&self->subscription, subscriber, interestedTopic);
 }
 
-void Broker_Unsubscribe(Broker_t *this, SubscriptionAccountId id) {
+void Broker_Unsubscribe(Broker_t *self, SubscriptionAccountId id) {
 	/**
 	 * NOTE: pendingしているメッセージここでは消さず、
 	 * Republishするときにアカウントが見つからなければ消すという方法を取る
 	 */
-	Subscription_Cancellation(&this->subscription, id);
+	Subscription_Cancellation(&self->subscription, id);
 }
 
-void Broker_Destroy(Broker_t *this) {
-	Subscription_Destroy(&this->subscription);
-	MessageStorage_Destroy(&this->pendingMessages);
+void Broker_Destroy(Broker_t *self) {
+	Subscription_Destroy(&self->subscription);
+	MessageStorage_Destroy(&self->pendingMessages);
 }
 
 

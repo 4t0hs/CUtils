@@ -3,53 +3,53 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "Csv/content/line/CsvLineCollection.h"
+#include "utilities.h"
 
 #define INITIAL_CAPACITY	(32)
-#define CLEAR(this)			(memset(this, 0, sizeof(CsvLineCollection_t)))
 
-static inline bool NeedResize(CsvLineCollection_t *this) {
-	return this->length >= this->capacity;
+static inline bool NeedResize(CsvLineCollection_t *self) {
+	return self->length >= self->capacity;
 }
-void CsvLineCollection_Init(CsvLineCollection_t *this) {
-	this->capacity = INITIAL_CAPACITY;
-	this->list = calloc(this->capacity, sizeof(CsvLine_t));
-	this->length = 0;
-}
-
-void CsvLineCollection_Resize(CsvLineCollection_t *this, size_t new_capacity) {
-	this->list = realloc(this->list, new_capacity * sizeof(CsvLine_t));
-	this->capacity = new_capacity;
+void CsvLineCollection_Init(CsvLineCollection_t *self) {
+	self->capacity = INITIAL_CAPACITY;
+	self->list = calloc(self->capacity, sizeof(CsvLine_t));
+	self->length = 0;
 }
 
-void CsvLineCollection_MoveAndAdd(CsvLineCollection_t *this, CsvLine_t *move_line) {
-	if (NeedResize(this)) {
-		CsvLineCollection_Resize(this, this->capacity * 2);
+void CsvLineCollection_Resize(CsvLineCollection_t *self, size_t new_capacity) {
+	self->list = realloc(self->list, new_capacity * sizeof(CsvLine_t));
+	self->capacity = new_capacity;
+}
+
+void CsvLineCollection_MoveAndAdd(CsvLineCollection_t *self, CsvLine_t *move_line) {
+	if (NeedResize(self)) {
+		CsvLineCollection_Resize(self, self->capacity * 2);
 	}
-	CsvLine_MoveOwner(move_line, &this->list[this->length++]);
+	CsvLine_MoveOwner(move_line, &self->list[self->length++]);
 }
 
-void CsvLineCollection_Destroy(CsvLineCollection_t *this) {
-	for (size_t i = 0; i < this->length; i++) {
-		CsvLine_t *line = &this->list[i];
+void CsvLineCollection_Destroy(CsvLineCollection_t *self) {
+	for (size_t i = 0; i < self->length; i++) {
+		CsvLine_t *line = &self->list[i];
 		CsvLine_Destroy(line);
 	}
-	free(this->list);
+	free(self->list);
 }
 
-void CsvLineCollection_Print(CsvLineCollection_t *this) {
-	for (size_t i = 0; i < this->length; i++) {
-		CsvLine_t *line = &this->list[i];
+void CsvLineCollection_Print(CsvLineCollection_t *self) {
+	for (size_t i = 0; i < self->length; i++) {
+		CsvLine_t *line = &self->list[i];
 		CsvLine_Print(line);
 		printf("\n");
 	}
 }
 
-bool CsvLineCollection_Equals(CsvLineCollection_t *this, CsvLineCollection_t *lines) {
-	if (this->length != lines->length) {
+bool CsvLineCollection_Equals(CsvLineCollection_t *self, CsvLineCollection_t *lines) {
+	if (self->length != lines->length) {
 		return false;
 	}
-	for (size_t i = 0; i < this->length; i++) {
-		CsvLine_t *line1 = &this->list[i];
+	for (size_t i = 0; i < self->length; i++) {
+		CsvLine_t *line1 = &self->list[i];
 		CsvLine_t *line2 = &lines->list[i];
 		if (!CsvLine_Equals(line1, line2)) {
 			return false;

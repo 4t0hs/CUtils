@@ -1,95 +1,108 @@
 #include <stdint.h>
 #include <stdlib.h>
-#include <errno.h>
 #include "PublisherSubscriber/Publisher.h"
 #include "PublisherSubscriber/MessageStorage.h"
 #include "utilities.h"
 
-static inline void *GetBottom(MessageStorage_t *this) {
-	return this->messages + (this->messageSize * this->bottom);
+static inline void *GetBottom(MessageStorage_t *self) {
+	return self->messages + (self->messageSize * self->bottom);
 }
 
-static inline void *GetTop(MessageStorage_t *this) {
-	return this->messages + (this->top * this->messageSize);
+static inline void *GetTop(MessageStorage_t *self) {
+	return self->messages + (self->top * self->messageSize);
 }
 
-static inline void UpdateTop(MessageStorage_t *this) {
-	if ((this->top + 1) >= this->capacity) {
-		this->top = 0;
+static inline void UpdateTop(MessageStorage_t *self) {
+	if ((self->top + 1) >= self->capacity) {
+		self->top = 0;
 	} else {
-		this->top++;
+		self->top++;
 	}
 }
 
-static inline void UpdateBottom(MessageStorage_t *this) {
-	if ((this->bottom + 1) >= this->capacity) {
-		this->bottom = 0;
+static inline void UpdateBottom(MessageStorage_t *self) {
+	if ((self->bottom + 1) >= self->capacity) {
+		self->bottom = 0;
 	} else {
-		this->bottom++;
+		self->bottom++;
 	}
 }
 
-void MessageStorage_Init(MessageStorage_t *this, size_t messageSize, size_t capacity) {
-	CLEAR(this);
-	this->messages = calloc(capacity, messageSize);
-	this->capacity = capacity;
-	this->messageSize = messageSize;
+void MessageStorage_Init(MessageStorage_t *self, size_t messageSize, size_t capacity) {
+	if (UNLIKELY(!self)) {
+		return;
+	}
+	CLEAR(self);
+	self->messages = calloc(capacity, messageSize);
+	self->capacity = capacity;
+	self->messageSize = messageSize;
 }
 
-int MessageStorage_Push(MessageStorage_t *this, const void *adding) {
-	if (this->count == this->capacity) {
-		errno = ENOBUFS;
+int MessageStorage_Push(MessageStorage_t *self, const void *adding) {
+	if (UNLIKELY(!self || !adding)) {
 		return -1;
 	}
-	void *message = GetBottom(this);
-	memcpy(message, adding, this->messageSize);
-	UpdateBottom(this);
-	this->count++;
+	if (self->count == self->capacity) {
+		return -1;
+	}
+	void *message = GetBottom(self);
+	memcpy(message, adding, self->messageSize);
+	UpdateBottom(self);
+	self->count++;
 	return 0;
 }
 
-int MessageStorage_Pop(MessageStorage_t *this, void *buffer) {
-	if (!buffer) {
-		errno = EINVAL;
+int MessageStorage_Pop(MessageStorage_t *self, void *buffer) {
+	if (UNLIKELY(!self || !buffer)) {
 		return -1;
 	}
-	if (this->count == 0) {
-		errno = EINVAL;
+	if (self->count == 0) {
 		return -1;
 	}
-	memcpy(buffer, GetTop(this), this->messageSize);
-	UpdateTop(this);
-	this->count--;
+	memcpy(buffer, GetTop(self), self->messageSize);
+	UpdateTop(self);
+	self->count--;
 	return 0;
 }
 
-const void *MessageStorage_Peek(MessageStorage_t *this) {
-	if (this->count == 0) return NULL;
-	return GetTop(this);
+const void *MessageStorage_Peek(MessageStorage_t *self) {
+	if (UNLIKELY(!self)) {
+		return NULL;
+	}
+	if (self->count == 0) {
+		return NULL;
+	}
+	return GetTop(self);
 }
 
-void MessageStorage_MoveLast(MessageStorage_t *this) {
-	if (this->count <= 1) {
+void MessageStorage_MoveLast(MessageStorage_t *self) {
+	if (UNLIKELY(!self)) {
 		return;
 	}
-	void *topMessage = GetTop(this);
-	UpdateTop(this);
-	UpdateBottom(this);
-	memcpy(GetBottom(this), topMessage, this->messageSize);
+	if (self->count <= 1) {
+		return;
+	}
+	void *topMessage = GetTop(self);
+	UpdateTop(self);
+	UpdateBottom(self);
+	memcpy(GetBottom(self), topMessage, self->messageSize);
 }
 
-void MessageStorage_RemoveTop(MessageStorage_t *this) {
-	if (this->count == 0) {
+void MessageStorage_RemoveTop(MessageStorage_t *self) {
+	if (UNLIKELY(!self)) {
 		return;
 	}
-	UpdateTop(this);
-	this->count--;
+	if (self->count == 0) {
+		return;
+	}
+	UpdateTop(self);
+	self->count--;
 }
 
-void MessageStorage_Destroy(MessageStorage_t *this) {
-	if (UNLIKELY(!this)) {
+void MessageStorage_Destroy(MessageStorage_t *self) {
+	if (UNLIKELY(!self)) {
 		return;
 	}
-	if (this->messages) free(this->messages);
-	CLEAR(this);
+	if (self->messages) free(self->messages);
+	CLEAR(self);
 }

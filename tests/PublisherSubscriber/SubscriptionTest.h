@@ -93,7 +93,6 @@ TEST_F(SubscriptionTest, IdNotExists) {
 
 TEST_F(SubscriptionTest, InvalidAPIsArgument) {
 	Cancellation(numAccounts + 1);
-	EXPECT_EQ(EINVAL, errno);
 	EXPECT_EQ(nullptr, GetAccount(numAccounts + 1));
 }
 

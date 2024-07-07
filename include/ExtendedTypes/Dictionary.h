@@ -8,17 +8,17 @@
 #include <stddef.h>
 #include <stdint.h>
 
-typedef struct DictionaryValue {
+typedef struct DictionaryValue_t {
 	void *buffer;
 	size_t size;
 } DictionaryObject_t;
 
-typedef struct DictionaryElement {
+typedef struct DictionaryElement_t {
 	char *key;
 	DictionaryObject_t object;
 } DictionaryElement_t;
 
-typedef struct Dictionary {
+typedef struct Dictionary_t {
 	struct hsearch_data hashTable;
 	struct {
 		DictionaryElement_t *list;

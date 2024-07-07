@@ -1,10 +1,9 @@
 #pragma once
 
-#include <stdint.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include <stdint.h>
 
 	typedef int PublishMessageAttribute;
 	typedef uint64_t PublishMessage;

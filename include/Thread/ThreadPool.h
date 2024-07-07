@@ -27,14 +27,14 @@ typedef struct ThreadPool_t {
 	GMutex mutex;
 } ThreadPool_t;
 
-extern void ThreadPool_Init(ThreadPool_t *object, uint16_t numThreads);
+extern void ThreadPool_Init(ThreadPool_t *self, uint16_t numThreads);
 
-extern int ThreadPool_Push(ThreadPool_t *object, const ThreadPoolTask_t *task);
+extern int ThreadPool_Push(ThreadPool_t *self, const ThreadPoolTask_t *task);
 
-extern int ThreadPool_PushTasks(ThreadPool_t *object, const ThreadPoolTask_t *tasks[], uint64_t numTasks);
-extern void ThreadPool_Destroy(ThreadPool_t *object, bool isWait);
+extern int ThreadPool_PushTasks(ThreadPool_t *self, const ThreadPoolTask_t *tasks[], uint64_t numTasks);
+extern void ThreadPool_Destroy(ThreadPool_t *self, bool isWait);
 
-extern uint64_t ThreadPool_GetNumTasks(ThreadPool_t *object);
+extern uint64_t ThreadPool_GetNumTasks(ThreadPool_t *self);
 
 #ifdef __cplusplus
 }

@@ -4,65 +4,65 @@
 #include <stdio.h>
 #include "Csv/content/item/CsvItem.h"
 #include "Csv/content/item/CsvItemCollection.h"
+#include "utilities.h"
 
 #define INITIAL_CAPACITY	(32)
-#define CLEAR(this)			(memset(this, 0, sizeof(CsvItemCollection_t)));
 
-static inline bool NeedResize(CsvItemCollection_t *this) {
-	return this->length >= this->capacity;
+static inline bool NeedResize(CsvItemCollection_t *self) {
+	return self->length >= self->capacity;
 }
 
-void CsvItemCollection_Init(CsvItemCollection_t *this) {
-	CLEAR(this);
-	this->capacity = INITIAL_CAPACITY;
-	this->list = calloc(this->capacity, sizeof(CsvItem_t));
-	this->length = 0;
+void CsvItemCollection_Init(CsvItemCollection_t *self) {
+	CLEAR(self);
+	self->capacity = INITIAL_CAPACITY;
+	self->list = calloc(self->capacity, sizeof(CsvItem_t));
+	self->length = 0;
 }
 
-void CsvItemCollection_Resize(CsvItemCollection_t *this, size_t new_capacity) {
-	this->list = realloc(this->list, new_capacity * sizeof(CsvItem_t));
-	this->capacity = new_capacity;
+void CsvItemCollection_Resize(CsvItemCollection_t *self, size_t new_capacity) {
+	self->list = realloc(self->list, new_capacity * sizeof(CsvItem_t));
+	self->capacity = new_capacity;
 }
 
-void CsvItemCollection_MoveOwner(CsvItemCollection_t *this, CsvItemCollection_t *new_owner) {
-	*new_owner = *this;
-	CLEAR(this);
+void CsvItemCollection_MoveOwner(CsvItemCollection_t *self, CsvItemCollection_t *new_owner) {
+	*new_owner = *self;
+	CLEAR(self);
 }
 
-void CsvItemCollection_MoveAndAdd(CsvItemCollection_t *this, CsvItem_t *item) {
-	if (NeedResize(this)) {
-		CsvItemCollection_Resize(this, this->capacity * 2);
+void CsvItemCollection_MoveAndAdd(CsvItemCollection_t *self, CsvItem_t *item) {
+	if (NeedResize(self)) {
+		CsvItemCollection_Resize(self, self->capacity * 2);
 	}
-	CsvItem_MoveOwner(item, &this->list[this->length++]);
+	CsvItem_MoveOwner(item, &self->list[self->length++]);
 }
 
-void CsvItemCollection_Destroy(CsvItemCollection_t *this) {
-	for (size_t i = 0; i < this->length; i++) {
-		CsvItem_t *item = &this->list[i];
+void CsvItemCollection_Destroy(CsvItemCollection_t *self) {
+	for (size_t i = 0; i < self->length; i++) {
+		CsvItem_t *item = &self->list[i];
 		CsvItem_Destroy(item);
 	}
-	free(this->list);
+	free(self->list);
 }
 
-void CsvItemCollection_Clear(CsvItemCollection_t *this) {
-	CLEAR(this);
+void CsvItemCollection_Clear(CsvItemCollection_t *self) {
+	CLEAR(self);
 }
 
-void CsvItemCollection_Print(CsvItemCollection_t *this) {
-	for (size_t i = 0; i < this->length; i++) {
-		CsvItem_t *item = &this->list[i];
+void CsvItemCollection_Print(CsvItemCollection_t *self) {
+	for (size_t i = 0; i < self->length; i++) {
+		CsvItem_t *item = &self->list[i];
 		CsvItem_Print(item);
 		printf(", ");
 	}
 }
 
-bool CsvItemCollection_Equals(CsvItemCollection_t *this, CsvItemCollection_t *items) {
-	if (this->length != items->length) {
+bool CsvItemCollection_Equals(CsvItemCollection_t *self, CsvItemCollection_t *items) {
+	if (self->length != items->length) {
 		return false;
 	}
 
-	for (size_t i = 0; i < this->length; i++) {
-		CsvItem_t *item1 = &this->list[i];
+	for (size_t i = 0; i < self->length; i++) {
+		CsvItem_t *item1 = &self->list[i];
 		CsvItem_t *item2 = &items->list[i];
 		if (!CsvItem_Equals(item1, item2)) {
 			return false;
