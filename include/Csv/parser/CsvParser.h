@@ -1,3 +1,9 @@
+/**
+ * @file CsvParser.h
+ * @brief Csvパーサー
+ * @author atohs
+ * @date 2024/07/12
+ */
 #pragma once
 #ifdef __cplusplus
 extern "C" {
@@ -7,6 +13,9 @@ extern "C" {
 #include "../content/CsvContent.h"
 #include "../Csv.h"
 
+	/**
+	 * @brief 制御ブロック
+	 */
 	struct CsvParser_t;
 	typedef struct CsvParser_t CsvParser_t;
 

@@ -1,8 +1,20 @@
+/**
+ * @file Dictionary.c
+ * @brief 辞書型
+ * @author atohs
+ * @date 2024/07/12
+ */
 #include "ExtendedTypes/Dictionary.h"
 #include <string.h>
 #include <stdlib.h>
 #include "utilities.h"
 
+/**
+ * @brief 要素を追加
+ * @param self インスタンス
+ * @param element 要素
+ * @return ステータス
+ */
 static inline DictionaryReturn Add(Dictionary_t *self, DictionaryElement_t *element) {
 	ENTRY e = { .key = element->key, .data = element };
 	ENTRY *ep = NULL;
@@ -12,6 +24,10 @@ static inline DictionaryReturn Add(Dictionary_t *self, DictionaryElement_t *elem
 	return DICTIONARY_ADDED;
 }
 
+/**
+ * @brief メモリープールからバッファを割り当てる
+ * @param self インスタンス
+ */
 static void AssignMemory(Dictionary_t *self) {
 	void *current = self->memoryPool;
 	self->elements.list = (DictionaryElement_t *)current;
@@ -26,6 +42,13 @@ static void AssignMemory(Dictionary_t *self) {
 	}
 }
 
+/**
+ * @brief 初期化
+ * @param self インスタンス
+ * @param capacity 最大容量
+ * @param maxKeySize キーの最大長
+ * @param maxObjectSize 要素のサイズ
+ */
 void Dictionary_Init(Dictionary_t *self, size_t capacity, size_t maxKeySize, size_t maxObjectSize) {
 	if (UNLIKELY(!self)) {
 		return;
@@ -44,6 +67,14 @@ void Dictionary_Init(Dictionary_t *self, size_t capacity, size_t maxKeySize, siz
 	AssignMemory(self);
 }
 
+/**
+ * @brief 要素を追加
+ * @param self インスタンス
+ * @param key キー
+ * @param object 要素
+ * @param objectSize サイズ
+ * @return ステータス
+ */
 DictionaryReturn Dictionary_Add(Dictionary_t *self, const char *key, void *object, size_t objectSize) {
 	if (UNLIKELY(!self || !key || !object)) {
 		return DICTIONARY_INVALID_ARG;
@@ -68,6 +99,12 @@ DictionaryReturn Dictionary_Add(Dictionary_t *self, const char *key, void *objec
 	return DICTIONARY_ADDED;
 }
 
+/**
+ * @brief 要素を取得する
+ * @param self インスタンス
+ * @param key キー
+ * @return 要素
+ */
 const DictionaryObject_t *Dictionary_Find(Dictionary_t *self, char *key) {
 	if (UNLIKELY(!self || !key)) {
 		return NULL;
@@ -84,6 +121,10 @@ const DictionaryObject_t *Dictionary_Find(Dictionary_t *self, char *key) {
 	return &((DictionaryElement_t *)foundObject->data)->object;
 }
 
+/**
+ * @brief インスタンスを破棄
+ * @param self インスタンス
+ */
 void Dictionary_Destroy(Dictionary_t *self) {
 	if (UNLIKELY(!self)) {
 		return;

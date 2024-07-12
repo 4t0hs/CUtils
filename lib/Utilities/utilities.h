@@ -1,3 +1,9 @@
+/**
+ * @file utilities.h
+ * @brief ユーティリティ
+ * @author atohs
+ * @date 2024/07/12
+ */
 #pragma once
 
 #include <string.h>

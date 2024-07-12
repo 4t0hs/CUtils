@@ -1,3 +1,9 @@
+/**
+ * @file CsvParser.c
+ * @brief csvパーサー
+ * @author atohs
+ * @date 2024/07/12
+*/
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,49 +12,113 @@
 #include "Csv/parser/CsvParser.h"
 #include "utilities.h"
 
-typedef struct FileBuffer {
+/**
+ * @brief ファイルバッファ
+ */
+typedef struct FileBuffer_t {
 	char *data;
 	size_t size;
 } FileBuffer_t;
+
+/**
+ * @struct CsvParser_t
+ * @brief csvパーサー
+ */
 struct CsvParser_t {
 	CsvProperties_t properties;
 	CsvContent_t content;
 	FileBuffer_t file;
 };
 
+//! ファイルの終端識別子
 #define EOF				((uint8_t)0xFF)
+//! EOFの長さ
 #define EOF_LENGTH		(sizeof(EOF))
+//! コンマ
 #define COMMA			(',')
+//! 改行文字
 #define CARRIGE_RETURN	('\r')
+//! 改行文字
 #define LINE_FEED		('\n')
+
+/**
+ * @brief ファイルの終端化判定
+ * @param c 文字
+ * @return
+ */
 static inline bool IsEof(char c) {
 	return (uint8_t)c == EOF;
 }
+
+/**
+ * @brief コンマか
+ * @param c 文字
+ * @return
+ */
 static inline bool IsComma(char c) {
 	return c == COMMA;
 }
+
+/**
+ * @brief 改行文字か
+ * @param c 文字
+ * @return
+ */
 static inline bool IsCr(char c) {
 	return c == LINE_FEED;
 }
+
+/**
+ * @brief 改行文字か
+ * @param c 文字
+ * @return
+ */
 static inline bool IsLf(char c) {
 	return c == CARRIGE_RETURN;
 }
+
+/**
+ * @brief 改行文字か
+ * @param c 文字
+ * @param nextChar 次の文字
+ * @return
+ */
 static inline bool IsCrLf(char c, char nextChar) {
 	return IsLf(c) && IsCr(nextChar);
 }
 
+/**
+ * @brief 文字を終端する
+ * @param c 文字
+ */
 static inline void Terminate(char *c) {
 	*c = '\0';
 }
 
+/**
+ * @brief 不要な文字か
+ * @param c 文字
+ * @return
+ */
 static inline bool IsExtraChars(char c) {
 	return c == '\0' || IsCr(c) || IsLf(c);
 }
 
+/**
+ * @brief アスキー文字か
+ * @param c
+ * @return
+ */
 static inline bool IsAscii(char c) {
 	return (uint8_t)c <= 0x7F;
 }
 
+/**
+ * @brief 有効な文字コードか
+ * @param data データ
+ * @param size サイズ
+ * @return
+ */
 static bool IsNotSupportedCharCode(const char *data, size_t size) {
 	for (size_t i = 0; i < size; i++) {
 		if (!IsAscii(data[i]) && !IsEof(data[i])) {
@@ -58,6 +128,11 @@ static bool IsNotSupportedCharCode(const char *data, size_t size) {
 	return false;
 }
 
+/**
+ * @brief EOFで埋める
+ * @param data データ
+ * @param size サイズ
+ */
 static void FillEof(char *data, size_t size) {
 	// 最後の値は必ずEofにする
 	data[size - 1] = EOF;
@@ -69,6 +144,11 @@ static void FillEof(char *data, size_t size) {
 	}
 }
 
+/**
+ * @brief パース
+ * @param self インスタンス
+ * @return 結果
+ */
 static CsvReturnCode Parse(CsvParser_t *self) {
 	if (IsNotSupportedCharCode(self->file.data, self->file.size)) {
 		return CSV_INVALID_CHAR_CODE;
@@ -111,6 +191,12 @@ static CsvReturnCode Parse(CsvParser_t *self) {
 	return CSV_SUCCESS;
 }
 
+/**
+ * @brief ファイル読込み
+ * @param self インスタンス
+ * @param filePath ファイルパス
+ * @return 0=成功
+ */
 static int LoadFile(CsvParser_t *self, const char *filePath) {
 	ssize_t file_size = File_GetSize(filePath);
 	if (file_size < 0) {
@@ -129,6 +215,11 @@ static int LoadFile(CsvParser_t *self, const char *filePath) {
 	return 0;
 }
 
+/**
+ * @brief 初期化
+ * @param props プロパティ
+ * @return インスタンス
+ */
 CsvParser_t *CsvParser_Init(const CsvProperties_t *props) {
 	CsvParser_t *self = (CsvParser_t *)calloc(1, sizeof(*self));
 
@@ -137,6 +228,12 @@ CsvParser_t *CsvParser_Init(const CsvProperties_t *props) {
 	return self;
 }
 
+/**
+ * @brief データを読み込んでパースする
+ * @param self インスタンス
+ * @param filePath ファイルパス
+ * @return ステータス
+ */
 CsvReturnCode CsvParser_LoadFromFile(CsvParser_t *self, const char *filePath) {
 	if (UNLIKELY(!self)) {
 		return CSV_INVALID_PARAMETER;
@@ -147,6 +244,13 @@ CsvReturnCode CsvParser_LoadFromFile(CsvParser_t *self, const char *filePath) {
 	return Parse(self);
 }
 
+/**
+ * @brief データを読み込んでパースする
+ * @param self インスタンス
+ * @param data データ
+ * @param dataSize データサイズ
+ * @return ステータス
+ */
 CsvReturnCode CsvParser_LoadFromData(CsvParser_t *self, const char *data, size_t dataSize) {
 	if (UNLIKELY(!self || !data || dataSize == 0)) {
 		return CSV_INVALID_PARAMETER;
@@ -159,6 +263,11 @@ CsvReturnCode CsvParser_LoadFromData(CsvParser_t *self, const char *data, size_t
 	return Parse(self);
 }
 
+/**
+ * @brief csvデータを取得する
+ * @param self インスタンス
+ * @return 参照
+ */
 const CsvContent_t *CsvParser_GetContent(CsvParser_t *self) {
 	if (UNLIKELY(!self)) {
 		return NULL;
@@ -166,6 +275,10 @@ const CsvContent_t *CsvParser_GetContent(CsvParser_t *self) {
 	return &self->content;
 }
 
+/**
+ * @brief インスタンスを破棄
+ * @param self インスタンス
+ */
 void CsvParser_Destroy(CsvParser_t *self) {
 	if (UNLIKELY(!self)) {
 		return;

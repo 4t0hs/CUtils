@@ -1,18 +1,41 @@
+/**
+ * @file Subscription.c
+ * @brief サブスクリプション
+ * @author atohs
+ * @date 2024/07/12
+ */
 #include <stdlib.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include "utilities.h"
 #include "PublisherSubscriber/Subscription.h"
 
+ /**
+  * @brief アカウントを取得
+  * @param self インスタンス
+  * @param id アカウントID
+  * @return アカウント
+  */
 static inline SubscriptionAccount_t *GetAccount(Subscription_t *self, SubscriptionAccountId id) {
 	return &self->accounts[id];
 }
 
+/**
+ * @brief 購読する内容化判定
+ * @param self アカウント
+ * @param attribute 購読する属性
+ * @return
+ */
 static inline bool IsMatch(SubscriptionAccount_t *self, PublishMessageAttribute attribute) {
 	return self->interestedPublish == attribute;
 }
 
-void Subscription_Init(Subscription_t *self, int numAccounts) {
+/**
+ * @brief 初期化
+ * @param self インスタンス
+ * @param numAccounts アカウント数
+ */
+void Subscription_Init(Subscription_t *self, size_t numAccounts) {
 	if (UNLIKELY(!self)) {
 		return;
 	}
@@ -21,11 +44,18 @@ void Subscription_Init(Subscription_t *self, int numAccounts) {
 	self->numAccounts = numAccounts;
 }
 
-SubscriptionAccountId Subscription_Contract(Subscription_t *self, Subscriber_t *subscriber, PublishMessageAttribute interestedTopic) {
+/**
+ * @brief サブスクライブ
+ * @param self インスタンス
+ * @param subscriber サブスクライバー
+ * @param interestedTopic 購読する属性
+ * @return アカウントID
+ */
+SubscriptionAccountId Subscription_Contract(Subscription_t *self, const Subscriber_t *subscriber, PublishMessageAttribute interestedTopic) {
 	if (UNLIKELY(!self || !subscriber)) {
 		return -1;
 	}
-	for (int i = 0; i < self->numAccounts; i++) {
+	for (size_t i = 0; i < self->numAccounts; i++) {
 		SubscriptionAccount_t *account = &self->accounts[i];
 		if (!account->contracted) {
 			account->id = i;
@@ -38,6 +68,11 @@ SubscriptionAccountId Subscription_Contract(Subscription_t *self, Subscriber_t *
 	return -1;
 }
 
+/**
+ * @brief サブスクライブを停止
+ * @param self インスタンス
+ * @param id アカウントID
+ */
 void Subscription_Cancellation(Subscription_t *self, SubscriptionAccountId id) {
 	if (UNLIKELY(!self || id >= self->numAccounts)) {
 		return;
@@ -48,6 +83,12 @@ void Subscription_Cancellation(Subscription_t *self, SubscriptionAccountId id) {
 	}
 }
 
+/**
+ * @brief アカウントを取得
+ * @param self インスタンス
+ * @param id アカウントID
+ * @return アカウント
+ */
 SubscriptionAccount_t *Subscription_GetAccount(Subscription_t *self, SubscriptionAccountId id) {
 	if (UNLIKELY(!self || id >= self->numAccounts)) {
 		return NULL;
@@ -59,6 +100,14 @@ SubscriptionAccount_t *Subscription_GetAccount(Subscription_t *self, Subscriptio
 	return NULL;
 }
 
+/**
+ * @brief 購読する内容にマッチするアカウントを取得
+ * @param self インスタンス
+ * @param messageAttribute 属性
+ * @param matchedIds バッファ
+ * @param size バッファサイズ
+ * @return マッチしたアカウント数
+ */
 ssize_t Subscription_Match(Subscription_t *self, PublishMessageAttribute messageAttribute, SubscriptionAccountId matchedIds[], size_t size) {
 	if (UNLIKELY(!self || !matchedIds)) {
 		return -1;
@@ -77,6 +126,10 @@ ssize_t Subscription_Match(Subscription_t *self, PublishMessageAttribute message
 	return (ssize_t)bufferIndex;
 }
 
+/**
+ * @brief インスタンスを破棄
+ * @param self インスタンス
+ */
 void Subscription_Destroy(Subscription_t *self) {
 	if (UNLIKELY(!self)) {
 		return;
@@ -85,6 +138,11 @@ void Subscription_Destroy(Subscription_t *self) {
 	CLEAR(self);
 }
 
+/**
+ * @brief 契約者数をカウント
+ * @param self インスタンス
+ * @return 契約者数
+ */
 size_t Subscription_Count(Subscription_t *self) {
 	if (UNLIKELY(!self)) {
 		return 0;

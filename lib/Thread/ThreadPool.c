@@ -1,3 +1,9 @@
+/**
+ * @file ThreadPool.c
+ * @brief スレッドプール
+ * @author atohs
+ * @date 2024/07/12
+ */
 #include <glib-2.0/glib.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -27,11 +33,16 @@ static _Atomic uint64_t poolCounter = 0;
 #define QUEUE_PUSH	g_queue_push_tail
 
 static void _ExitWorker(void *);
-
+//! ワーカースレッドを終了させる
 static const ThreadPoolTask_t exitTask = {
 	.function = _ExitWorker, .arg = NULL
 };
 
+/**
+ * @brief 新たなタスクが来るのを待つ
+ * @param self インスタンス
+ * @return タスク
+ */
 static ThreadPoolTask_t *WaitForNewTask(ThreadPool_t *self) {
 	ThreadPoolTask_t *task;
 	while (1) {
@@ -46,11 +57,19 @@ static ThreadPoolTask_t *WaitForNewTask(ThreadPool_t *self) {
 	return task;
 }
 
+/**
+ * @brief スレッドの終了
+ * @param arg 使用しない
+ */
 static void _ExitWorker(void *arg) {
 	(void)arg;
 	g_thread_exit(NULL);
 }
 
+/**
+ * @brief ワーカースレッドを停止する
+ * @param self インスタンス
+ */
 static inline void StopWorkers(ThreadPool_t *self) {
 	for (uint16_t i = 0; i < self->maxNumThreads; i++) {
 		MUTEX_LOCK(&self->mutex);
@@ -59,6 +78,11 @@ static inline void StopWorkers(ThreadPool_t *self) {
 	}
 }
 
+/**
+ * @brief ワーカースレッド
+ * @param arg インスタンス
+ * @return 0
+ */
 static gpointer WorkerThread(gpointer arg) {
 	ThreadPool_t *self = arg;
 	while (1) {
@@ -71,6 +95,10 @@ static gpointer WorkerThread(gpointer arg) {
 	return (gpointer)0;
 }
 
+/**
+ * @brief ワーカーが停止するのを待つ
+ * @param self インスタンス
+ */
 static void WaitForWorkersExited(ThreadPool_t *self) {
 	for (uint16_t i = 0; i < self->maxNumThreads; i++) {
 		GThread *thread = self->workers[i];
@@ -80,16 +108,30 @@ static void WaitForWorkersExited(ThreadPool_t *self) {
 	}
 }
 
+/**
+ * @brief ワーカースレッドを強制停止する
+ * @attention 実装が思いついていないので、意味をなしていない
+ * @param self インスタンス
+ */
 static void AbortWorkers(ThreadPool_t *self) {
 	StopWorkers(self);
 }
 
-static uint GetHardwareConcurrency(void) {
+/**
+ * @brief プロセスの並行性を取得
+ * @return プロセッサ数
+ */
+static uint GetHardwareConcurrency() {
 	cpu_set_t cpu_set;
 	sched_getaffinity(getpid(), sizeof(cpu_set), &cpu_set);
 	return CPU_COUNT(&cpu_set);
 }
 
+/**
+ * @brief 初期化
+ * @param self インスタンス
+ * @param numThreads ワーカースレッド数
+ */
 void ThreadPool_Init(ThreadPool_t *self, uint16_t numThreads) {
 	g_return_if_fail(self);
 
@@ -111,6 +153,12 @@ void ThreadPool_Init(ThreadPool_t *self, uint16_t numThreads) {
 	}
 }
 
+/**
+ * @brief タスクをプッシュ
+ * @param self インスタンス
+ * @param task タスク
+ * @return 0: ok
+ */
 int ThreadPool_Push(ThreadPool_t *self, const ThreadPoolTask_t *task) {
 	g_return_val_if_fail(self, -1);
 	g_return_val_if_fail(task, -1);
@@ -122,6 +170,13 @@ int ThreadPool_Push(ThreadPool_t *self, const ThreadPoolTask_t *task) {
 	return 0;
 }
 
+/**
+ * @brief タスクをプッシュ
+ * @param self インスタンス
+ * @param tasks タスク集合
+ * @param numTasks 数
+ * @return 0: ok
+ */
 int ThreadPool_PushTasks(ThreadPool_t *self, const ThreadPoolTask_t *tasks[], uint64_t numTasks) {
 	g_return_val_if_fail(self, -1);
 	g_return_val_if_fail(tasks, -1);
@@ -135,6 +190,12 @@ int ThreadPool_PushTasks(ThreadPool_t *self, const ThreadPoolTask_t *tasks[], ui
 	return 0;
 }
 
+/**
+ * @brief インスタンスを破棄
+ * @attention 'isWait'の値にかかわらずスレッドの終了を待つ
+ * @param self インスタンス
+ * @param isWait スレッドの終了を待つ
+ */
 void ThreadPool_Destroy(ThreadPool_t *self, bool isWait) {
 	g_return_if_fail(self);
 	if (isWait) {
@@ -149,6 +210,11 @@ void ThreadPool_Destroy(ThreadPool_t *self, bool isWait) {
 	CLEAR(self);
 }
 
+/**
+ * @brief タスク数を取得
+ * @param self インスタンス
+ * @return タスク数
+ */
 uint64_t ThreadPool_GetNumTasks(ThreadPool_t *self) {
 	g_return_val_if_fail(self, 0);
 	MUTEX_LOCK(&self->mutex);

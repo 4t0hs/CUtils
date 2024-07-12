@@ -1,10 +1,22 @@
+/**
+ * @file Bitset.c
+ * @brief ビット集合
+ * @author atohs
+ * @date 2024/07/12
+ */
 #include <stdint.h>
 #include <stdlib.h>
 #include "utilities.h"
 #include "Bitset/Bitset.h"
 
+//! 0 suppress
 #define fill(p, v, s)	(memset((p), (v), (s) * __BS_WORD_BYTE))
 
+/**
+ * @brief 初期化
+ * @param self インスタンス
+ * @param numBits ビット数
+ */
 void Bitset_Init(Bitset_t *self, uint64_t numBits) {
 	if (__BS_UNLIKELY(!self)) {
 		return;
@@ -15,6 +27,10 @@ void Bitset_Init(Bitset_t *self, uint64_t numBits) {
 	self->words = calloc(self->capacity, sizeof(uint64_t));
 }
 
+/**
+ * @brief インスタンスを破棄
+ * @param self インスタンス
+ */
 void Bitset_Destroy(Bitset_t *self) {
 	if (__BS_UNLIKELY(!self)) {
 		return;
@@ -24,6 +40,11 @@ void Bitset_Destroy(Bitset_t *self) {
 	CLEAR(self);
 }
 
+/**
+ * @brief 右シフト
+ * @param self インスタンス
+ * @param shift シフトする数
+ */
 void Bitset_RightShift(Bitset_t *self, uint64_t shift) {
 	if (__BS_UNLIKELY(!self)) {
 		return;
@@ -55,6 +76,11 @@ void Bitset_RightShift(Bitset_t *self, uint64_t shift) {
 	fill(&self->words[limit + 1], 0, self->capacity - limit -1);
 }
 
+/**
+ * @brief 左シフト
+ * @param self インスタンス
+ * @param shift シフトするビット数
+ */
 void Bitset_LeftShift(Bitset_t *self, uint64_t shift) {
 	if (__BS_UNLIKELY(!self)) {
 		return;
@@ -83,6 +109,12 @@ void Bitset_LeftShift(Bitset_t *self, uint64_t shift) {
 	fill(self->words, 0, shiftWords);
 }
 
+/**
+ * @brief バイナリを文字列に変換
+ * @param v 値
+ * @param buffer バッファ
+ * @param length サイズ
+ */
 static inline void BinaryToString(uint64_t v, char *buffer, uint8_t length) {
 	if (length == 0) {
 		return;
@@ -92,6 +124,12 @@ static inline void BinaryToString(uint64_t v, char *buffer, uint8_t length) {
 		*buffer++ = (v & mask) ? '1' : '0';
 	}
 }
+
+/**
+ * @brief 文字列へ
+ * @param self インスタンス
+ * @return 
+ */
 char *Bitset_ToString(Bitset_t *self) {
 	if (__BS_UNLIKELY(!self)) {
 		return NULL;

@@ -1,3 +1,9 @@
+/**
+ * @file File.h
+ * @brief ファイル操作
+ * @author atohs
+ * @date 2024/07/12
+ */
 #pragma once
 
 #include <unistd.h>

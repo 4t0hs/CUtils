@@ -8,7 +8,7 @@
 
 class CsvParserTest : public::testing::Test {
 protected:
-	static constexpr CsvProperties_t props = { .has_header = false };
+	static constexpr CsvProperties_t props = { .hasHeader = false };
 	CsvParser_t *parser;
 	void SetUp() override {
 		parser = CsvParser_Init(&props);
