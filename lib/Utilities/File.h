@@ -6,10 +6,21 @@
  */
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <unistd.h>
 #include <stdbool.h>
 
-ssize_t File_GetSize(const char *path);
-bool File_Exists(const char *path);
-int File_Read(const char *path, void *buffer, size_t size);
+	ssize_t File_GetSize(const char *path);
+	bool File_Exists(const char *path);
+	int File_Read(const char *path, void *buffer, size_t size);
+	int File_Create(const char *path);
+
+#ifdef __cplusplus
+}
+#endif
+
+
 

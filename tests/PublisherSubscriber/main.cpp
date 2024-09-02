@@ -1,4 +1,4 @@
-#include "SubscriptionTest.h"
-#include "MessageStorageTest.h"
-#include "PubSubTest.h"
+#include "SubscriptionTest.hpp"
+#include "MessageStorageTest.hpp"
+#include "PubSubTest.hpp"
 

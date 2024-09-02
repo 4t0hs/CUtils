@@ -1,2 +1,2 @@
-#include "DictionaryTest.h"
-#include "gtest/gtest.h"
+// #include "DictionaryTest.hpp"
+#include "ArrayListTest.hpp"

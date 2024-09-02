@@ -1,4 +1,4 @@
-#include "BackGroundTaskTest.h"
-#include "ThreadPoolTest.h"
+#include "BackGroundTaskTest.hpp"
+#include "ThreadPoolTest.hpp"
 
 #include <bitset>

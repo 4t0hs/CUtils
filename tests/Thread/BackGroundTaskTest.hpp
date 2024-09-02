@@ -56,7 +56,7 @@ protected:
 };
 
 TEST_F(BackGroundTaskTest, NormalFinish) {
-	task.impl.work.func = [](BackGroundTask_t *o, void *s) {
+	task.work.func = [](BackGroundTask_t *o, void *s) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		return BACK_GROUND_TASK_EXITED;
 	};
@@ -68,7 +68,7 @@ TEST_F(BackGroundTaskTest, NormalFinish) {
 }
 
 TEST_F(BackGroundTaskTest, ProgressReport) {
-	task.impl.work.func = [](BackGroundTask_t *o, void *s) {
+	task.work.func = [](BackGroundTask_t *o, void *s) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		int prog = 0;
 		for (int i = 0; i < 5; i++) {
@@ -90,7 +90,7 @@ TEST_F(BackGroundTaskTest, ProgressReport) {
 
 bool isReady = false;
 TEST_F(BackGroundTaskTest, setup) {
-	task.impl.work.func = [](BackGroundTask_t *o, void *s) {
+	task.work.func = [](BackGroundTask_t *o, void *s) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		return BACK_GROUND_TASK_EXITED;
 	};
@@ -111,7 +111,7 @@ TEST_F(BackGroundTaskTest, setup) {
 }
 
 TEST_F(BackGroundTaskTest, WorkCancellation) {
-	task.impl.work.func = [](BackGroundTask_t *o, void *s) {
+	task.work.func = [](BackGroundTask_t *o, void *s) {
 		while (o->cancellationPending == false) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}
@@ -126,7 +126,7 @@ TEST_F(BackGroundTaskTest, WorkCancellation) {
 }
 
 TEST_F(BackGroundTaskTest, AbortTask) {
-	task.impl.work.func = [](BackGroundTask_t *o, void *s) {
+	task.work.func = [](BackGroundTask_t *o, void *s) {
 		for (int i = 0; i < 100; i++) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}

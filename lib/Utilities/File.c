@@ -54,3 +54,10 @@ int File_Read(const char *path, void *buffer, size_t size) {
 	fclose(fp);
 	return 0;
 }
+
+int File_Create(const char *path) {
+	FILE *fp = fopen(path, "w");
+	if (!fp) return -errno;
+	fclose(fp);
+	return 0;
+}
