@@ -14,7 +14,7 @@ extern "C" {
 #include <stdint.h>
 #include <sys/resource.h>
 #include <stdio.h>
-// #include <stdatomic.h>
+	// #include <stdatomic.h>
 #include "Process/ProcessOutput.h"
 
 	/**
@@ -47,6 +47,10 @@ extern "C" {
 		struct rusage usage;
 		char workspace[32];
 		pid_t id;
+		struct {
+			void *address;
+			size_t size;
+		} stack;
 		double startTime;
 		double exitTime;
 		bool terminated;
@@ -70,8 +74,8 @@ extern "C" {
 	extern double Process_StartTime(Process *self);
 	extern double Process_ExitTime(Process *self);
 	extern pid_t Process_Id(Process *self);
-	extern FILE *Process_StandardOutput(Process *self);
-	extern FILE *Process_StandardError(Process *self);
+	extern void Process_StandardOutput(Process *self, ProcessOutput *result);
+	extern void Process_StandardError(Process *self, ProcessOutput *result);
 
 	extern void Process_Start(Process *self);
 	extern void Process_Wait(Process *self);

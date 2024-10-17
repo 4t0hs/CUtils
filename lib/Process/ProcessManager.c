@@ -39,7 +39,7 @@ static void sigchldHandler(int signalNumber, siginfo_t *signalInfo, void *uconte
 	ProcessManager *self = getMyself();
 	void *data;
 	LOCK(&self->mutex, {
-		data = g_hash_table_lookup(self->processes, (gconstpointer)signalInfo->si_pid);
+		data = g_hash_table_lookup(self->processes, GINT_TO_POINTER(signalInfo->si_pid));
 		});
 	// printf("Process %d exited with code %d\n", signalInfo->si_pid, signalInfo->si_status);
 	if (!data || !self->onExited) {
@@ -78,14 +78,14 @@ void ProcessManager_Destroy() {
 void ProcessManager_Register(pid_t pid, void *data) {
 	ProcessManager *self = getMyself();
 	LOCK(&self->mutex, {
-		g_hash_table_insert(self->processes, (gpointer)pid, data);
+		g_hash_table_insert(self->processes, GINT_TO_POINTER(pid), data);
 		});
 }
 
 void ProcessManager_Unregister(pid_t pid) {
 	ProcessManager *self = getMyself();
 	LOCK(&self->mutex, {
-		g_hash_table_remove(self->processes, (gconstpointer)pid);
+		g_hash_table_remove(self->processes, GINT_TO_POINTER(pid));
 		});
 	return;
 }

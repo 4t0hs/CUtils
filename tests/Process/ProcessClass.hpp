@@ -10,8 +10,7 @@ private:
 	std::vector<char *> _environment;
 public:
 	ProcessInfo() = default;
-	ProcessInfo(std::string &commandLine, bool disableOutputCapture = false) : commandLine(commandLine), disableOutputCapture(disableOutputCapture) {}
-	ProcessInfo(std::string &&commandLine, bool disableOutputCapture = false) : commandLine(commandLine), disableOutputCapture(disableOutputCapture) {}
+	ProcessInfo(std::string commandLine, bool disableOutputCapture = false) : commandLine(commandLine), disableOutputCapture(disableOutputCapture) {}
 	void SetEnvironment(std::vector<std::string> environment) {
 		_environment.clear();
 		_environment.reserve(environment.size());
@@ -60,23 +59,28 @@ public:
 		return Process_Id(this);
 	}
 	std::string StandardOutput() {
-		FILE *fp = Process_StandardOutput(this);
-		if (fp == nullptr) {
+		ProcessOutput output;
+		Process_StandardOutput(this, &output);
+		if (output.size == 0) {
+			ProcessOutput_Destroy(&output);
 			return "";
 		}
-		char buffer[1024] = { 0 };
-		fread(buffer, 1, sizeof(buffer), fp);
-		fclose(fp);
-		return std::string(buffer);
+		char *buffer = ProcessOutput_Read(&output);
+		ProcessOutput_Destroy(&output);
+		std::string text{buffer};
+		free(buffer);
+		return text;
 	}
 	std::string StandardError() {
-		FILE *fp = Process_StandardError(this);
-		if (fp == nullptr) {
+		ProcessOutput output;
+		Process_StandardError(this, &output);
+		if (output.size == 0) {
+			ProcessOutput_Destroy(&output);
 			return "";
 		}
-		char buffer[1024] = { 0 };
-		fread(buffer, 1, sizeof(buffer), fp);
-		fclose(fp);
+		char buffer[output.size + 1];
+		ProcessOutput_ReadTo(&output, buffer, output.size + 1);
+		ProcessOutput_Destroy(&output);
 		return std::string(buffer);
 	}
 

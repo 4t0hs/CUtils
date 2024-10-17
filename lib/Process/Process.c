@@ -15,6 +15,7 @@
 #include "Process/Process.h"
 
 atomic_int processCount = 0;
+atomic_bool initialized = false;
 
 #define ROOT	"/tmp/process"
 #define SHELL_PATH "/bin/sh"
@@ -58,7 +59,7 @@ static inline void RemoveWorkspace(Process *self) {
 
 	rmdir(self->workspace);
 }
-#include <errno.h>
+
 /**
  * @brief child processes exit handler
  */
@@ -103,19 +104,28 @@ static void Execute(const ProcessStartInfo *info, const char *outputPath, const 
 		CaptureOutput(outputPath, errorPath);
 	}
 	execve(SHELL_PATH, (char *const *)newArgv, info->environment);
-	_exit(PROCESS_FAILED);	// unreachable
 }
 
 /**
  * @brief Static processing
  */
 static void InitStatic() {
-	CreateRootDirectory();
-	ProcessManager_Init(CommonExitedHandler);
+	if (!initialized) {
+		CreateRootDirectory();
+		ProcessManager_Init(CommonExitedHandler);
+	}
 }
 
 static inline double TimevalToDouble(const struct timeval *time) {
 	return (double)time->tv_sec + ((double)((long)(time->tv_usec / 1000)) / 1000.0);
+}
+
+static void ChildProcess(Process *self) {
+	char outputPath[64] = { 0 };
+	sprintf(outputPath, "%s/" STANDARD_OUTPUT_FILE, self->workspace);
+	char errorPath[64] = { 0 };
+	sprintf(errorPath, "%s/" STANDARD_ERROR_FILE, self->workspace);
+	Execute(&self->info, outputPath, errorPath);	// no return
 }
 //! @}
 
@@ -232,34 +242,36 @@ pid_t Process_Id(Process *self) {
 	return self->id;
 }
 
-FILE *Process_StandardOutput(Process *self) {
+void Process_StandardOutput(Process *self, ProcessOutput *result) {
 	if (UNLIKELY(!self || !self->id)) {
-		return NULL;
+		return;
 	}
 	if (self->info.disableOutputCapture) {
-		return NULL;
+		return;
 	}
 	if (!self->terminated) {
-		return NULL;
+		return;
 	}
 	char outputPath[64] = { 0 };
-	sprintf(outputPath, "%s/" STANDARD_OUTPUT_FILE, self->workspace);
-	return fopen(outputPath, "r");
+	snprintf(outputPath, sizeof(outputPath), "%s/" STANDARD_OUTPUT_FILE, self->workspace);
+	ProcessOutput_Init(result, outputPath);
+	return;
 }
 
-FILE *Process_StandardError(Process *self) {
+void Process_StandardError(Process *self, ProcessOutput *result) {
 	if (UNLIKELY(!self || !self->id)) {
-		return NULL;
+		return;
 	}
 	if (self->info.disableOutputCapture) {
-		return NULL;
+		return;
 	}
 	if (!self->terminated) {
-		return NULL;
+		return;
 	}
 	char errorPath[64] = { 0 };
-	sprintf(errorPath, "%s/" STANDARD_ERROR_FILE, self->workspace);
-	return fopen(errorPath, "r");
+	snprintf(errorPath, sizeof(errorPath), "%s/" STANDARD_ERROR_FILE, self->workspace);
+	ProcessOutput_Init(result, errorPath);
+	return;
 }
 //! @}
 
@@ -275,11 +287,8 @@ void Process_Start(Process *self) {
 		return;
 	}
 	if (self->id == 0) {
-		char outputPath[64] = { 0 };
-		sprintf(outputPath, "%s/" STANDARD_OUTPUT_FILE, self->workspace);
-		char errorPath[64] = { 0 };
-		sprintf(errorPath, "%s/" STANDARD_ERROR_FILE, self->workspace);
-		Execute(&self->info, outputPath, errorPath);	// no return
+		ChildProcess(self);
+		_exit(PROCESS_FAILED);	// unreachable
 	}
 	self->startTime = (double)GetRealTime() / 1000.0;
 	ProcessManager_Register(self->id, self);

@@ -21,8 +21,10 @@ TEST_F(ProcessTest, ExecuteProcess) {
 	EXPECT_EQ(true, process.HasExited());
 	EXPECT_EQ(0, process.ExitCode());
 
-	EXPECT_STREQ("This is standard output", process.StandardOutput().c_str());
-	EXPECT_STREQ("This is standard error", process.StandardError().c_str());
+	std::string output = process.StandardOutput();
+	std::string error = process.StandardError();
+	EXPECT_STREQ("This is standard output", output.c_str());
+	EXPECT_STREQ("This is standard error", error.c_str());
 }
 
 TEST_F(ProcessTest, ExecuteProcessWithEnvironment) {
@@ -101,6 +103,3 @@ TEST_F(ProcessTest, OutputProperties) {
 	
 	process2.PrintSummary();
 }
-
-
-
